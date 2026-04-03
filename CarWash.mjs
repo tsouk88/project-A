@@ -1,4 +1,4 @@
-import  {Weather}  from './Weather.js';
+import  {Weather}  from './Weather.mjs';
 
 class CarWash {
     constructor() {
@@ -41,33 +41,30 @@ if (this.wash.washType === 'Simple' ) {
     this.dailyMoney += price ;
 
     }
-Show () {
+async Show () {
     console.log(`Today we had ${this.cars} cars and ${this.motorcycles} motorcycles.`);
     console.log(`We gathered ${this.dailyMoney}€ today. `);
     console.log(`People used ${this.simplewash} Simple Washes and ${this.premiumwash} Premium Washes today. `)
-    let temperature = Weather();
-    if (temperature> 15){
-        console.log(`Temperature right now is ${temp} Celsius , it's kinda hot`)
-    }
-    else {
-        console.log(`Temperature right now is ${temp} Celsius , it's kinda cold`)
+    let temperature = await Weather();
+    if (temperature !== null) {
+        if (temperature > 15) {
+            console.log(`Temperature right now is ${temperature} Celsius , it's kinda hot`);
+        } else {
+            console.log(`Temperature right now is ${temperature} Celsius , it's kinda cold`);
+        }
+    } else {
+        console.log("Could not retrieve temperature information right now.");
     }
 }
 };
 
-const myStation = new CarWash(); // Ανοίγουμε το μαγαζί
+const myStation = new CarWash(); 
 
-myStation.addWash('Car', 'Premium', 20); // Έρχεται αμάξι
-myStation.addWash('Motorcycle', 'Simple', 10); // Έρχεται μηχανή
-myStation.addWash('Car', 'Premium', 30); // Έρχεται αμάξι
+myStation.addWash('Car', 'Premium', 20); 
+myStation.addWash('Motorcycle', 'Simple', 10); 
+myStation.addWash('Car', 'Premium', 30); 
 
-myStation.Show();
+myStation.Show().catch(err => console.error(err));
+
 
     
-
-
-
-
-
-
-
