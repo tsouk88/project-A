@@ -9,12 +9,14 @@ class CarWash {
         this.simplewash=0;
         this.premiumwash=0;
         this.wash ={};
+        this.simpleprice= 10;
+        this.premiumprice= 20;
+        this.prices= [];
     }
-addWash (vehicle , washType , price) {
+addWash (vehicle , washType ) {
     this.wash = {
         vehicle ,
         washType,
-        price
     }
     if (this.wash.vehicle === 'Car' ) {
         this.cars++; 
@@ -28,17 +30,8 @@ addWash (vehicle , washType , price) {
         console.log('Not valid Entry')
         return;
     }
-if (this.wash.washType === 'Simple' ) {
-        this.simplewash++;
-    }
-    else if (this.wash.washType === 'Premium') {
-        this.premiumwash++; 
-    }
-    else {
-        console.log('Not valid Entry')
-        return;     
-    }
-    this.dailyMoney += price ;
+    this.fixedPrice();
+    this.dailyMoney = this.prices.reduce((total, price) => total + price, 0);
 
     }
 async Show () {
@@ -56,13 +49,26 @@ async Show () {
         console.log("Could not retrieve temperature information right now.");
     }
 }
-};
 
+fixedPrice() {
+    if (this.wash.washType === 'Simple') {
+        this.simplewash++;
+        return this.prices.push(this.simpleprice);
+    } else if (this.wash.washType === 'Premium') {
+        this.premiumwash++;
+        return this.prices.push(this.premiumprice);
+    }
+    else {
+        console.log('Not valid Entry')
+        return;     
+    }
+}
+}
 const myStation = new CarWash(); 
 
-myStation.addWash('Car', 'Premium', 20); 
-myStation.addWash('Motorcycle', 'Simple', 10); 
-myStation.addWash('Car', 'Premium', 30); 
+myStation.addWash('Car', 'Premium'); 
+myStation.addWash('Motorcycle', 'Simple'); 
+myStation.addWash('Car', 'Premium'); 
 
 myStation.Show().catch(err => console.error(err));
 
