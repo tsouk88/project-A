@@ -1,9 +1,9 @@
 {
-  "money": 110,
-  "cars": 5,
-  "motorcycles": 3,
-  "washes24h": 8,
-  "simplewash": 3,
-  "premiumwash": 4,
+  "money": 450,
+  "cars": 20,
+  "motorcycles": 14,
+  "washes24h": 34,
+  "simplewash": 17,
+  "premiumwash": 14,
   "date": "4/4/2026"
 }

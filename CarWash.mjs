@@ -13,7 +13,7 @@ class CarWash {
         this.simpleprice= 10;
         this.premiumprice= 20;
         this.prices= [];
-    }
+    }  
 addWash (vehicle , washType ) {
     this.wash = {
         vehicle ,
@@ -88,26 +88,58 @@ async SaveData () {
         date : new Date().toLocaleDateString()
     }
     try {       
-        await writeFile('wash_stats.json ', JSON.stringify(Data, null , 2))
+        await writeFile('wash_stats.json', JSON.stringify(Data, null , 2))
         console.log ("Τα δεδομένα αποθηκεύτηκαν με επιτυχία!")
     } catch(err) {
         console.error("Error Saving File" , err)
     }
 }
+
+async LoadData () {
+    try {
+        const dataString = await readFile('wash_stats.json', 'utf-8'); 
+        const SaveData = JSON.parse(dataString);
+        this.dailyMoney = SaveData.money || 0;
+        if(this.dailyMoney > 0) this.prices.push(this.dailyMoney);
+        this.cars = SaveData.cars || 0;
+        this.motorcycles = SaveData.motorcycles || 0;
+        this.washes24h = SaveData.washes24h || 0;
+        this.simplewash = SaveData.simplewash || 0;
+        this.premiumwash = SaveData.premiumwash || 0   
+        console.log ('Τα δεδομένα φορτώθηκαν με επιτυχία')} 
+        catch (err){
+            console.error('Error Loading File , starting Fresh' , err)
+        }
+    }
+
+
 }
+
 const myStation = new CarWash(); 
 
-myStation.addWash('Car', 'Premium'); 
-myStation.addWash('Motorcycle', 'Simple'); 
-myStation.addWash('Car', 'Premium'); 
-myStation.addWash('Motorcycle', 'Simple'); 
-myStation.addWash('Car', 'Simple'); 
-myStation.addWash('Motorcycle', 'Premium');
-myStation.addWash('Car', 'VIP');
-myStation.addWash('Car', 'Premium');
+async function start (){
+    try {
+        await myStation.LoadData();
+        myStation.addWash('Car', 'Premium'); 
+        myStation.addWash('Motorcycle', 'Simple');
+        myStation.addWash('Car', 'Premium'); 
+        myStation.addWash('Motorcycle', 'Simple'); 
+        myStation.addWash('Car', 'Premium'); 
+        myStation.addWash('Motorcycle', 'Simple'); 
+        myStation.addWash('Car', 'Simple'); 
+        myStation.addWash('Motorcycle', 'Premium');
+        myStation.addWash('Car', 'VIP');
+        myStation.addWash('Car', 'Premium');
+        myStation.addWash('Motorcycle', 'Simple');
+        myStation.addWash('Car', 'Simple');
+        await myStation.Show();
+    } 
+    catch(err){ 
+        console.error(`Error Loading Data: ${err}`)
+    }
+}
+start ();
 
-myStation.Show().catch(err => console.error(err));
 //localStorage.setItem('Total Money' ,this.dailyMoney) in case this was run on a browser
 
 
-    
