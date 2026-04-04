@@ -9,21 +9,25 @@ class CarWash {
         this.dailyMoney = 0;
         this.simplewash=0;
         this.premiumwash=0;
-        this.wash ={};
         this.simpleprice= 10;
         this.premiumprice= 20;
-        this.prices= [];
     }  
 addWash (vehicle , washType ) {
-    this.wash = {
-        vehicle ,
-        washType,
+    const validVehicles = ['Car', 'Motorcycle'];
+    const validTypes = ['Simple', 'Premium'];
+    if (!validVehicles.includes(vehicle)) {
+        console.log(`${vehicle} is not a valid vehicle`);
+        return;
     }
-    if (this.wash.vehicle === 'Car' ) {
+    if (!validTypes.includes(washType)) {
+        console.log(`${washType} is not a valid wash type`);
+        return;
+    }
+    if (vehicle === 'Car' ) {
         this.cars++; 
         this.washes24h++;
     }
-    else if (this.wash.vehicle === 'Motorcycle') {
+    else if (vehicle === 'Motorcycle') {
         this.motorcycles++;
         this.washes24h++;
     }      
@@ -31,8 +35,7 @@ addWash (vehicle , washType ) {
         console.log('Not valid Entry')
         return;
     }
-    this.fixedPrice();
-    this.dailyMoney = this.prices.reduce((total, price) => total + price, 0);
+    this.fixedPrice(vehicle, washType);
 
     }
 
@@ -40,7 +43,7 @@ addWash (vehicle , washType ) {
 async Show () {
     console.log(`Today we had ${this.cars} cars and ${this.motorcycles} motorcycles.`);
     console.log(`We gathered ${this.dailyMoney}€ today. `);
-    console.log(`People used ${this.simplewash} Simple Washes and ${this.premiumwash} Premium Washes today. `)
+    console.log(`People used ${this.simplewash} Simple Washes and ${this.premiumwash} Premium Washes  `)
     let weatherdata = await Weather();
     if (weatherdata === null) {
         console.log("Could not retrieve weather information right now.")
@@ -61,19 +64,16 @@ async Show () {
     await this.SaveData();
 }
 
-fixedPrice() {
-    if(this.wash.vehicle !== 'Car' && this.wash.vehicle !== 'Motorcycle'){
-        console.log(`${this.wash.vehicle} is Not a Valid Entry` )
-        return}
-    else if (this.wash.washType === 'Simple') {
+fixedPrice(vehicle, washType) {
+     if (washType === 'Simple') {
         this.simplewash++;
-        return this.prices.push(this.simpleprice);
-    } else if (this.wash.washType === 'Premium') {
+        this.dailyMoney += this.simpleprice;
+    } else if (washType === 'Premium') {
         this.premiumwash++;
-        return this.prices.push(this.premiumprice);
+        this.dailyMoney += this.premiumprice;
     }
     else {
-        console.log(` ${this.wash.washType} is Not a Valid Entry` )
+        console.log(` ${washType} is Not a Valid Entry` )
     }
 }
 
@@ -100,7 +100,6 @@ async LoadData () {
         const dataString = await readFile('wash_stats.json', 'utf-8'); 
         const SaveData = JSON.parse(dataString);
         this.dailyMoney = SaveData.money || 0;
-        if(this.dailyMoney > 0) this.prices.push(this.dailyMoney);
         this.cars = SaveData.cars || 0;
         this.motorcycles = SaveData.motorcycles || 0;
         this.washes24h = SaveData.washes24h || 0;
