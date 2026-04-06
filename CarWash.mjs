@@ -11,6 +11,7 @@ class CarWash {
         this.premiumwash=0;
         this.simpleprice= 10;
         this.premiumprice= 20;
+        this.history = [];
     }  
 addWash (vehicle , washType ) {
     const validVehicles = ['Car', 'Motorcycle'];
@@ -78,6 +79,7 @@ fixedPrice(vehicle, washType) {
 }
 
 async SaveData () {
+    const todaystring = new Date().toLocaleDateString();
     const Data = {
         money : this.dailyMoney,
         cars : this.cars,
@@ -85,10 +87,22 @@ async SaveData () {
         washes24h : this.washes24h,
         simplewash : this.simplewash,
         premiumwash : this.premiumwash,
-        date : new Date().toLocaleDateString()
+        date : todaystring
     }
-    try {       
-        await writeFile('wash_stats.json', JSON.stringify(Data, null , 2))
+    try {     
+        try {  
+        const content = await readFile('wash_stats.json', 'utf-8');
+        this.history = JSON.parse(content);
+        } catch (e) {
+            this.history = [];
+        }
+        const index = this.history.findIndex(entry => entry.date === todaystring);
+        if (index !== -1) {
+            this.history[index] = Data; }
+            else {
+            this.history.push(Data);
+        }    
+        await writeFile('wash_stats.json', JSON.stringify(this.history, null , 2))
         console.log ("Τα δεδομένα αποθηκεύτηκαν με επιτυχία!")
     } catch(err) {
         console.error("Error Saving File" , err)
@@ -97,17 +111,21 @@ async SaveData () {
 
 async LoadData () {
     try {
-        const dataString = await readFile('wash_stats.json', 'utf-8'); 
-        const SaveData = JSON.parse(dataString);
-        this.dailyMoney = SaveData.money || 0;
-        this.cars = SaveData.cars || 0;
-        this.motorcycles = SaveData.motorcycles || 0;
-        this.washes24h = SaveData.washes24h || 0;
-        this.simplewash = SaveData.simplewash || 0;
-        this.premiumwash = SaveData.premiumwash || 0   
+        const datastring = await readFile('wash_stats.json', 'utf-8'); 
+        this.history = JSON.parse(datastring);
+        if (this.history.length > 0) {
+            const lastEntry = this.history[this.history.length - 1];
+            this.dailyMoney = lastEntry.money || 0;
+            this.cars = lastEntry.cars || 0;
+            this.motorcycles = lastEntry.motorcycles || 0;
+            this.washes24h = lastEntry.washes24h || 0;
+            this.simplewash = lastEntry.simplewash || 0;
+            this.premiumwash = lastEntry.premiumwash || 0;
+        }
         console.log ('Τα δεδομένα φορτώθηκαν με επιτυχία')} 
         catch (err){
             console.error('Error Loading File , starting Fresh' , err)
+            this.history = [];
         }
     }
 
