@@ -18,12 +18,12 @@
     "date": "6/4/2026"
   },
   {
-    "money": 160,
-    "cars": 6,
-    "motorcycles": 5,
-    "washes24h": 11,
-    "simplewash": 6,
-    "premiumwash": 5,
+    "money": 1920,
+    "cars": 72,
+    "motorcycles": 60,
+    "washes24h": 132,
+    "simplewash": 72,
+    "premiumwash": 60,
     "date": "7/4/2026"
   }
 ]

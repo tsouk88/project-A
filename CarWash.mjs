@@ -1,7 +1,7 @@
 import { writeFile, readFile } from 'fs/promises';
 import  {Weather}  from './Weather.mjs';
 
-class CarWash {
+export default class CarWash {
     constructor() {
         this.cars=0;
         this.motorcycles=0;
