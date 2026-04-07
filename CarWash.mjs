@@ -43,8 +43,15 @@ addWash (vehicle , washType ) {
 
 async Show () {
     console.log(`Today we had ${this.cars} cars and ${this.motorcycles} motorcycles.`);
-    console.log(`We gathered ${this.dailyMoney}€ today. `);
+    const todaystring = new Date().toLocaleDateString();
+    const pastmoney= this.history.filter(d => d.date !== todaystring);
+    const totalpastmoney = pastmoney.reduce((total, entry) => total + entry.money, 0);
+    const overall = totalpastmoney + this.dailyMoney;
+    console.log(`Our total money gathered are : ${overall}€`);
+    console.log(`Today we made ${this.dailyMoney}€`);
+    console.log(`On previous days we had ${totalpastmoney}€ gathered`)
     console.log(`People used ${this.simplewash} Simple Washes and ${this.premiumwash} Premium Washes  `)
+
     let weatherdata = await Weather();
     if (weatherdata === null) {
         console.log("Could not retrieve weather information right now.")
@@ -62,6 +69,7 @@ async Show () {
     } else {
         console.log("Could not retrieve weather information right now.");
     }
+    
     await this.SaveData();
 }
 
@@ -115,14 +123,26 @@ async LoadData () {
         this.history = JSON.parse(datastring);
         if (this.history.length > 0) {
             const lastEntry = this.history[this.history.length - 1];
-            this.dailyMoney = lastEntry.money || 0;
-            this.cars = lastEntry.cars || 0;
-            this.motorcycles = lastEntry.motorcycles || 0;
-            this.washes24h = lastEntry.washes24h || 0;
-            this.simplewash = lastEntry.simplewash || 0;
-            this.premiumwash = lastEntry.premiumwash || 0;
-        }
-        console.log ('Τα δεδομένα φορτώθηκαν με επιτυχία')} 
+            const todaystr=new Date().toLocaleDateString(); 
+
+            if (lastEntry.date === todaystr)  {
+                this.dailyMoney = lastEntry.money || 0;
+                this.cars = lastEntry.cars || 0;
+                this.motorcycles = lastEntry.motorcycles || 0;
+                this.washes24h = lastEntry.washes24h || 0;
+                this.simplewash = lastEntry.simplewash || 0;
+                this.premiumwash = lastEntry.premiumwash || 0;
+            }
+            else {
+            this.dailyMoney = 0;
+                this.cars = 0;
+                this.motorcycles = 0;
+                this.washes24h = 0;
+                this.simplewash = 0;
+                this.premiumwash = 0;
+            }
+        console.log ('Τα δεδομένα φορτώθηκαν με επιτυχία')
+    }} 
         catch (err){
             console.error('Error Loading File , starting Fresh' , err)
             this.history = [];

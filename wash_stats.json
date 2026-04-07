@@ -1,11 +1,29 @@
 [
   {
-    "money": 320,
-    "cars": 12,
-    "motorcycles": 10,
-    "washes24h": 22,
-    "simplewash": 12,
-    "premiumwash": 10,
+    "money": 800,
+    "cars": 30,
+    "motorcycles": 25,
+    "washes24h": 55,
+    "simplewash": 30,
+    "premiumwash": 25,
+    "date": "5/4/2026"
+  },
+  {
+    "money": 1440,
+    "cars": 54,
+    "motorcycles": 45,
+    "washes24h": 99,
+    "simplewash": 54,
+    "premiumwash": 45,
     "date": "6/4/2026"
+  },
+  {
+    "money": 160,
+    "cars": 6,
+    "motorcycles": 5,
+    "washes24h": 11,
+    "simplewash": 6,
+    "premiumwash": 5,
+    "date": "7/4/2026"
   }
 ]
