@@ -12,6 +12,7 @@ export default class CarWash {
         this.simpleprice= 10;
         this.premiumprice= 20;
         this.history = [];
+        this.overall = 0 ;
     }  
 addWash (vehicle , washType ) {
     const validVehicles = ['Car', 'Motorcycle'];
@@ -42,36 +43,39 @@ addWash (vehicle , washType ) {
 
 
 async Show () {
-    console.log(`Today we had ${this.cars} cars and ${this.motorcycles} motorcycles.`);
     const todaystring = new Date().toLocaleDateString();
     const pastmoney= this.history.filter(d => d.date !== todaystring);
     const totalpastmoney = pastmoney.reduce((total, entry) => total + entry.money, 0);
-    const overall = totalpastmoney + this.dailyMoney;
-    console.log(`Our total money gathered are : ${overall}€`);
-    console.log(`Today we made ${this.dailyMoney}€`);
-    console.log(`On previous days we had ${totalpastmoney}€ gathered`)
-    console.log(`People used ${this.simplewash} Simple Washes and ${this.premiumwash} Premium Washes  `)
-
+    this.overall = totalpastmoney + this.dailyMoney;
+    
     let weatherdata = await Weather();
     if (weatherdata === null) {
         console.log("Could not retrieve weather information right now.")
         return }
-    if (weatherdata.currenttemp !== null) {
-        if (weatherdata.currenttemp > 15) {
-            console.log(`Temperature right now is ${weatherdata.currenttemp} Celsius , it's kinda hot`);
-        } else {
-            console.log(`Temperature right now is ${weatherdata.currenttemp} Celsius , it's kinda cold`);
-        }
-        if (weatherdata.wind > 30) {
-            console.log(`Watchout: Wind at (${weatherdata.wind} km/h)!`);
-        }
-        console.log(`Tomorrow will have max ${weatherdata.tomorrowmax} Celsius and min ${weatherdata.tomorrowmin} Celsius.`)
-    } else {
-        console.log("Could not retrieve weather information right now.");
-    }
     
     await this.SaveData();
-}
+    return {
+        revenue: {
+            today : this.dailyMoney,
+            past : totalpastmoney,
+            total : this.overall
+        },
+        counts: {
+            cars : this.cars,
+            motorcycles : this.motorcycles,
+            washes24h : this.washes24h,
+            simplewash : this.simplewash,
+            premiumwash : this.premiumwash
+        },
+        weather: {
+            currenttemp : weatherdata.currenttemp,
+            tomorrowmin : weatherdata.tomorrowmin,
+            tomorrowmax : weatherdata.tomorrowmax,
+            wind : weatherdata.wind 
+        }
+    }
+        }
+
 
 fixedPrice(vehicle, washType) {
      if (washType === 'Simple') {
@@ -149,6 +153,18 @@ async LoadData () {
         }
     }
 
+
+async resetData () {
+    this.cars = 0;
+    this.motorcycles = 0;
+    this.washes24h = 0;
+    this.dailyMoney = 0;
+    this.simplewash = 0;
+    this.premiumwash = 0;
+    this.overall = 0;
+    await this.SaveData();   
+    console.log ('All stats are reset')
+}
 
 }
 
