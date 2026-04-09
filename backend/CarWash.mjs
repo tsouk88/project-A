@@ -5,7 +5,7 @@ export default class CarWash {
     constructor() {
         this.cars=0;
         this.motorcycles=0;
-        this.washes24h =0;
+        this.washes =0;
         this.dailyMoney = 0;
         this.simplewash=0;
         this.premiumwash=0;
@@ -27,11 +27,11 @@ addWash (vehicle , washType ) {
     }
     if (vehicle === 'Car' ) {
         this.cars++; 
-        this.washes24h++;
+        this.washes++;
     }
     else if (vehicle === 'Motorcycle') {
         this.motorcycles++;
-        this.washes24h++;
+        this.washes++;
     }      
     else {
         console.log('Not valid Entry')
@@ -63,7 +63,7 @@ async Show () {
         counts: {
             cars : this.cars,
             motorcycles : this.motorcycles,
-            washes24h : this.washes24h,
+            washes : this.washes,
             simplewash : this.simplewash,
             premiumwash : this.premiumwash
         },
@@ -96,7 +96,7 @@ async SaveData () {
         money : this.dailyMoney,
         cars : this.cars,
         motorcycles : this.motorcycles,
-        washes24h : this.washes24h,
+        washes : this.washes,
         simplewash : this.simplewash,
         premiumwash : this.premiumwash,
         date : todaystring
@@ -133,7 +133,7 @@ async LoadData () {
                 this.dailyMoney = lastEntry.money || 0;
                 this.cars = lastEntry.cars || 0;
                 this.motorcycles = lastEntry.motorcycles || 0;
-                this.washes24h = lastEntry.washes24h || 0;
+                this.washes = lastEntry.washes || 0;
                 this.simplewash = lastEntry.simplewash || 0;
                 this.premiumwash = lastEntry.premiumwash || 0;
             }
@@ -141,7 +141,7 @@ async LoadData () {
             this.dailyMoney = 0;
                 this.cars = 0;
                 this.motorcycles = 0;
-                this.washes24h = 0;
+                this.washes = 0;
                 this.simplewash = 0;
                 this.premiumwash = 0;
             }
@@ -157,7 +157,7 @@ async LoadData () {
 async resetData () {
     this.cars = 0;
     this.motorcycles = 0;
-    this.washes24h = 0;
+    this.washes = 0;
     this.dailyMoney = 0;
     this.simplewash = 0;
     this.premiumwash = 0;

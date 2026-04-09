@@ -2,6 +2,7 @@ import express from 'express';
 import CarWash from './CarWash.mjs';
 
 const app = express();
+app.use(express.json());
 const port = 3000;
 const myWash = new CarWash();
 await myWash.LoadData();
@@ -11,10 +12,30 @@ app.get('/', (req, res) => {
 app.get('/info' , (req, res) => {
     res.send('The Carwash is always open 24/7')
 });
-app.get ('/add' , (req , res) => {
-    myWash.addWash('Car', 'Simple');
-    res.send('Done , one car with simple wash added')
-})
+app.post('/API/add-wash', async (req, res) => {
+    const { vehicle, washType } = req.body;
+    const validvehicles = ['Car', 'Motorcycle'];
+    const validtypes = ['Simple', 'Premium'];
+        if (!validvehicles.includes(vehicle) || !validtypes.includes(washType)) {
+            return res.status(400).json({ error: 'Invalid vehicle or wash type' , 
+                received: { vehicle, washType },
+                allowed: { vehicles: validvehicles, washType: validtypes } });
+        }
+
+    if (!vehicle || !washType) {
+        return res.status(400).json({ error: 'Missing vehicle or washType' });
+    }
+    try {
+        myWash.addWash(vehicle, washType);
+        await myWash.SaveData();
+        res.status(201).json({ 
+            message: 'Wash recorded successfully',
+            data: { vehicle, washType }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to save wash' });
+    }
+});
 app.get('/API/stats' , async (req,res) => {
     try {
     const data = await myWash.Show();
