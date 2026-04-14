@@ -1,5 +1,7 @@
 import express from 'express';
 import CarWash from './CarWash.mjs';
+import 'dotenv/config';
+import AskGemini from './AI/Gemini.mjs';
 
 const app = express();
 app.use(express.json());
@@ -36,6 +38,26 @@ app.post('/API/add-wash', async (req, res) => {
         res.status(500).json({ error: 'Failed to save wash' });
     }
 });
+app.post('/API/AI' , async (req,res) => {
+    const message = req.body.message;
+    const role = 'You are a helpftul assistant on an auto car wash providing technical and weather information'
+    if (!message) {
+        return res.status(400).json({ error: 'Missing message' });
+    }
+    try { 
+            const aiResponse = await AskGemini(role , message);
+            if (aiResponse) {
+            res.json({ response: aiResponse }); 
+             } else {
+            res.status(500).json({ error: 'Gemini sent an empty response' });
+             }
+        }
+        catch (error) {
+            console.error(error);
+           res.status(500).json({ error: 'Failed to talk with Gemini' });
+        }
+    })
+  
 app.get('/API/stats' , async (req,res) => {
     try {
     const data = await myWash.Show();
