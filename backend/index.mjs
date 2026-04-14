@@ -1,7 +1,7 @@
 import express from 'express';
 import CarWash from './CarWash.mjs';
 import 'dotenv/config';
-import AskGemini from './AI/Gemini.mjs';
+import AskGemini from './AI/Gemma.mjs';
 
 const app = express();
 app.use(express.json());
