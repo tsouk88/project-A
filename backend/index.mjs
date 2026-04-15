@@ -1,7 +1,8 @@
 import express from 'express';
 import CarWash from './CarWash.mjs';
 import 'dotenv/config';
-import AskGemini from './AI/Gemma.mjs';
+import AskGemma from './AI/Gemma.mjs';
+import { getHistory , addHistory } from './AI/conversationHistory.mjs';
 
 const app = express();
 app.use(express.json());
@@ -38,23 +39,58 @@ app.post('/API/add-wash', async (req, res) => {
         res.status(500).json({ error: 'Failed to save wash' });
     }
 });
-app.post('/API/AI' , async (req,res) => {
-    const message = req.body.message;
-    const role = 'You are a helpftul assistant on an auto car wash providing technical and weather information'
+app.post('/AI/chat' , async (req,res) => {
+    const messageid = req.body.messageid;
+    let message = req.body.message;
     if (!message) {
         return res.status(400).json({ error: 'Missing message' });
     }
+    let history = await getHistory(messageid);
+    const role = `Είσαι ο βοηθός του πλυντηρίου αυτοκινήτων στη Χίο. 
+                ΣΚΟΠΟΣ: Να μαζέψεις 2 πληροφορίες: 1. Όχημα (Car/Motorcycle) και 2. Τύπο (Simple/Premium).
+                ΚΑΝΟΝΕΣ:
+                  - Αν ο χρήστης πει "μηχανή" ή "μοτοσυκλέτα", θεώρησέ το "Motorcycle".
+                  - Αν ο χρήστης πει "αυτοκίνητο" ή "αμάξι", θεώρησέ το "Car".
+                  - ΑΝ ΛΕΙΠΕΙ κάποια πληροφορία, ΡΩΤΑ μόνο γι' αυτήν.
+                  - ΑΝ ΕΧΕΙΣ ΚΑΙ ΤΑ ΔΥΟ, κλείσε το ραντεβού και γράψε ΟΠΩΣΔΗΠΟΤΕ στο τέλος: {"tool" : "addwash" , "vehicle" : "Car ή Motorcycle" , "washType" : "Simple ή Premium"}
+                Απάντα πάντα στα Ελληνικά.`;   
+    let currentmessage = message ;
+    if (history.length === 0) {
+        currentmessage = `System Instructions: ${role} \n\n User Message: ${message}`;
+    }
+    history.push({ role: "user", parts: [{ text: currentmessage }] });
+    
     try { 
-            const aiResponse = await AskGemini(role , message);
+            const aiResponse = await AskGemma(role , history);
             if (aiResponse) {
-            res.json({ response: aiResponse }); 
+            if (aiResponse.toLowerCase().includes("addwash")) {
+                try {
+                    const start = aiResponse.indexOf('{');
+                    const end = aiResponse.lastIndexOf('}') +1;
+                    const part = aiResponse.substring(start, end );
+                    const data = JSON.parse(part);
+                    console.log (data);
+                    myWash.addWash(data.vehicle, data.washType);
+                    await myWash.SaveData();
+                    console.log (`New wash added : ${data.vehicle} ${data.washType}`);
+                }
+                catch (e) {
+                    console.error(`AI sent something different , ${e}`)
+                }
+                
+            }
+            await addHistory(messageid, 'user', currentmessage);
+            await addHistory(messageid, 'model', aiResponse);
+            let cleanResponse = aiResponse.split('{')[0].trim();
+            res.json({ response: cleanResponse });
+             
              } else {
-            res.status(500).json({ error: 'Gemini sent an empty response' });
+            res.status(500).json({ error: 'Gemma sent an empty response' });
              }
         }
         catch (error) {
             console.error(error);
-           res.status(500).json({ error: 'Failed to talk with Gemini' });
+           res.status(500).json({ error: 'Failed to talk with Gemma' });
         }
     })
   
