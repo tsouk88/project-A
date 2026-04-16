@@ -1,0 +1,8 @@
+{
+  "ignore": [
+    "washes.json",
+    "history.json",
+    "node_modules/**"
+  ],
+  "ext": "js,mjs,cjs"
+}

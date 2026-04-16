@@ -40,53 +40,66 @@ app.post('/API/add-wash', async (req, res) => {
     }
 });
 app.post('/AI/chat' , async (req,res) => {
+    const fullData = await myWash.Show();
+    const weatherInfo = fullData.weather;
     const messageid = req.body.messageid;
     let message = req.body.message;
     if (!message) {
         return res.status(400).json({ error: 'Missing message' });
     }
-    let history = await getHistory(messageid);
-    const role = `Είσαι ο βοηθός του πλυντηρίου αυτοκινήτων στη Χίο. 
-                ΣΚΟΠΟΣ: Να μαζέψεις 2 πληροφορίες: 1. Όχημα (Car/Motorcycle) και 2. Τύπο (Simple/Premium).
-                ΚΑΝΟΝΕΣ:
-                  - Αν ο χρήστης πει "μηχανή" ή "μοτοσυκλέτα", θεώρησέ το "Motorcycle".
-                  - Αν ο χρήστης πει "αυτοκίνητο" ή "αμάξι", θεώρησέ το "Car".
-                  - ΑΝ ΛΕΙΠΕΙ κάποια πληροφορία, ΡΩΤΑ μόνο γι' αυτήν.
-                  - ΑΝ ΕΧΕΙΣ ΚΑΙ ΤΑ ΔΥΟ, κλείσε το ραντεβού και γράψε ΟΠΩΣΔΗΠΟΤΕ στο τέλος: {"tool" : "addwash" , "vehicle" : "Car ή Motorcycle" , "washType" : "Simple ή Premium"}
-                Απάντα πάντα στα Ελληνικά.`;   
-    let currentmessage = message ;
-    if (history.length === 0) {
-        currentmessage = `System Instructions: ${role} \n\n User Message: ${message}`;
-    }
-    history.push({ role: "user", parts: [{ text: currentmessage }] });
-    
     try { 
-            const aiResponse = await AskGemma(role , history);
+             const currentWeather = await myWash.Show(); 
+             const history = await getHistory(messageid);
+             const role = `Είσαι βοηθός πλυντηρίου στη Χίο. 
+            ΚΑΙΡΟΣ (Context): ${JSON.stringify(weatherInfo)}
+
+            ΟΔΗΓΙΕΣ:
+            1. Αν σε ρωτησουν για τον καιρο Απάντησε για τον καιρό.
+            2. Αν υπάρχει κράτηση, γράψε "Η κράτηση έγινε!" και μετά ΣΤΑΝΤΑΡ τον πίνακα JSON.
+
+            ΠΑΡΑΔΕΙΓΜΑ ΕΞΟΔΟΥ ΚΡΑΤΗΣΗΣ(ΑΝΤΙΓΡΑΨΕ ΑΥΤΗ ΤΗ ΔΟΜΗ):
+             Η κράτηση έγινε!
+            [{"tool": "addwash", "vehicle": "Car", "washType": "Premium"}, {"tool": "addwash", "vehicle": "Motorcycle", "washType": "Simple"}]
+            ΠΑΡΑΔΕΙΓΜΑ ΕΞΟΔΟΥ ΚΑΙΡΟΥ : Ο καιρός είναι καλός ' 
+            αν ο καιρος δεν ειναι Ν/Α γραψε και τη θερμοκρασια που έχει τώρα ή ότι σου ζητησει ο χρήστης
+                        ΠΡΟΣΟΧΗ:
+            - Μην χρησιμοποιείς \`\`\`json ή \`\`\`.
+            - Μην γράφεις οδηγίες μέσα στην απάντηση.
+            - Ξεκίνα τον πίνακα [ αμέσως μετά το κείμενο.`;
+                      
+             const cleanHistory = history.map(item => ({
+                                    role: item.role,
+                                 parts: [{ text: item.parts[0].text }] 
+                                                      }));       
+            const currentmessage = `System Instructions: ${role} 
+                       Weather Context : ${JSON.stringify(currentWeather.weather)} 
+                      User Message: ${message}`;
+          cleanHistory.push({ role: "user", parts: [{ text: currentmessage }] });
+    
+            const aiResponse = await AskGemma(role , cleanHistory);
             if (aiResponse) {
-            if (aiResponse.toLowerCase().includes("addwash")) {
-                try {
-                    const start = aiResponse.indexOf('{');
-                    const end = aiResponse.lastIndexOf('}') +1;
+                     if (aiResponse.toLowerCase().includes("addwash" && aiResponse.includes("["))) {
+                    const start = aiResponse.indexOf('[');
+                    const end = aiResponse.lastIndexOf(']') +1;
                     const part = aiResponse.substring(start, end );
-                    const data = JSON.parse(part);
+                    const data = JSON.parse(part);                    
                     console.log (data);
-                    myWash.addWash(data.vehicle, data.washType);
-                    await myWash.SaveData();
-                    console.log (`New wash added : ${data.vehicle} ${data.washType}`);
-                }
-                catch (e) {
-                    console.error(`AI sent something different , ${e}`)
+                    data.forEach(item =>  {
+                        let v = item.vehicle.toLowerCase() === 'motorcycle' ? 'Motorcycle' : 'Car';
+                        let rawType = item.washType || item.wash_type || "Simple";
+                        let t = rawType.toLowerCase().includes('premium') ? 'Premium' : 'Simple';
+                        myWash.addWash(v, t);
+                        console.log (`New wash added : ${item.vehicle} ${item.washType}`)
+                })
+                     await myWash.SaveData();  
                 }
                 
+                     await addHistory(messageid, 'user', message);
+                     await addHistory(messageid, 'model', aiResponse);
+                     let cleanResponse = aiResponse.split('[')[0].trim();
+                    res.json({ response: cleanResponse });
             }
-            await addHistory(messageid, 'user', currentmessage);
-            await addHistory(messageid, 'model', aiResponse);
-            let cleanResponse = aiResponse.split('{')[0].trim();
-            res.json({ response: cleanResponse });
-             
-             } else {
-            res.status(500).json({ error: 'Gemma sent an empty response' });
-             }
+            
         }
         catch (error) {
             console.error(error);

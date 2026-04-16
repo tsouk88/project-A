@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node CarWash.mjs",
-    "dev": "nodemon --ignore wash_stats.json index.mjs"
+    "start": "node index.mjs",
+  "dev": "nodemon -e js,mjs --ignore washes.json --ignore history.json index.mjs"
   },
   "repository": {
     "type": "git",
