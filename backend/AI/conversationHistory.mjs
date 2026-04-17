@@ -19,7 +19,7 @@ export async function addHistory(sessionID, role , message) {
        history = JSON.parse(data)
     }
     catch(error) {
-        {}
+         history = {}
     }
     if (!history[sessionID]) {
         history[sessionID] = []

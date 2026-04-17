@@ -9,10 +9,15 @@ export default async function AskGemma (systemPrompt, history) {
             'Content-Type': 'application/json'
                 },
             body: JSON.stringify({
-                contents: history 
-                })
-            })
+         contents: [
+                { role: "user", parts: [{ text: `System: ${systemPrompt}` }] },
+                 { role: "model", parts: [{ text: "Εντάξει, θα ακολουθώ αυτές τις οδηγίες." }] },
+        ...history
+                 ]
+        })
+         }); 
             const data = await response.json();
+            
             if (data.candidates && data.candidates[0].content) {
             const aiResponse = data.candidates[0].content.parts[0].text; 
             return aiResponse;

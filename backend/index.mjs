@@ -3,6 +3,7 @@ import CarWash from './CarWash.mjs';
 import 'dotenv/config';
 import AskGemma from './AI/Gemma.mjs';
 import { getHistory , addHistory } from './AI/conversationHistory.mjs';
+import LoadData from './reader.mjs';
 
 const app = express();
 app.use(express.json());
@@ -40,51 +41,70 @@ app.post('/API/add-wash', async (req, res) => {
     }
 });
 app.post('/AI/chat' , async (req,res) => {
-    const fullData = await myWash.Show();
-    const weatherInfo = fullData.weather;
     const messageid = req.body.messageid;
     let message = req.body.message;
     if (!message) {
         return res.status(400).json({ error: 'Missing message' });
     }
     try { 
-             const currentWeather = await myWash.Show(); 
-             const history = await getHistory(messageid);
-             const role = `Είσαι βοηθός πλυντηρίου στη Χίο. 
-            ΚΑΙΡΟΣ (Context): ${JSON.stringify(weatherInfo)}
+             const history = await getHistory(messageid);         
+             const role = `Είσαι βοηθός πλυντηρίου αυτοκινήτων στη Χίο.
+                            Μπορείς να:
+                            - Απαντάς σε γενικές ερωτήσεις για το πλυντήριο
+                            - Ενημερώνεις για τον καιρό όταν σε ρωτάνε
+                            - Καταχωρείς κρατήσεις πλύσης
+                            ΣΤΑΤΙΣΤΙΚΑ - αν ο χρήστης ρωτήσει για stats/έσοδα/πλυσίματα:
+                                Διάβασε τα δεδομένα που σου δίνω και απάντησε με φυσικό κείμενο.
+                                ΠΑΡΑΔΕΙΓΜΑ: "Συνολικά είχατε 21 πλυσίματα και 300€ έσοδα."
+                                Μην επιστρέφεις JSON για στατιστικά.
+                            
+                            ΚΡΑΤΗΣΕΙΣ - αν ο χρήστης κάνει κράτηση για ΠΟΛΛΑ οχήματα:
+                            Γράψε ΕΝΑ αντικείμενο στο array ΓΙΑ ΚΑΘΕ όχημα ξεχωριστά.
+                            - Μην γράφεις τίποτε άλλο
+                            - Μην επαναλαμβάνεις οδηγίες
+                            Χρησιμοποίησε "Motorcycle" για μηχανή και "Car" για αυτοκίνητο στο JSON.
+                            Χρησιμοποίησε Simple ή Premium washtype στο JSON.
+                            ΠΑΡΑΔΕΙΓΜΑ για "1 αυτοκίνητο simple και 1 μηχανή premium":
+                            Η κράτηση έγινε!
+                            [{"tool": "addwash", "vehicle": "Car", "washType": "Simple"}, {"tool": "addwash", "vehicle": "Motorcycle", "washType": "Premium"}]
 
-            ΟΔΗΓΙΕΣ:
-            1. Αν σε ρωτησουν για τον καιρο Απάντησε για τον καιρό.
-            2. Αν υπάρχει κράτηση, γράψε "Η κράτηση έγινε!" και μετά ΣΤΑΝΤΑΡ τον πίνακα JSON.
+                            ΠΑΡΑΔΕΙΓΜΑ για "1 αυτοκίνητο premium":
+                            Η κράτηση έγινε!
+                            [{"tool": "addwash", "vehicle": "Car", "washType": "Premium"}]
 
-            ΠΑΡΑΔΕΙΓΜΑ ΕΞΟΔΟΥ ΚΡΑΤΗΣΗΣ(ΑΝΤΙΓΡΑΨΕ ΑΥΤΗ ΤΗ ΔΟΜΗ):
-             Η κράτηση έγινε!
-            [{"tool": "addwash", "vehicle": "Car", "washType": "Premium"}, {"tool": "addwash", "vehicle": "Motorcycle", "washType": "Simple"}]
-            ΠΑΡΑΔΕΙΓΜΑ ΕΞΟΔΟΥ ΚΑΙΡΟΥ : Ο καιρός είναι καλός ' 
-            αν ο καιρος δεν ειναι Ν/Α γραψε και τη θερμοκρασια που έχει τώρα ή ότι σου ζητησει ο χρήστης
-                        ΠΡΟΣΟΧΗ:
-            - Μην χρησιμοποιείς \`\`\`json ή \`\`\`.
-            - Μην γράφεις οδηγίες μέσα στην απάντηση.
-            - Ξεκίνα τον πίνακα [ αμέσως μετά το κείμενο.`;
+                            ΠΡΟΣΟΧΗ:
+                            - Μην χρησιμοποιείς \`\`\`json
+                            - Ξεκίνα τον πίνακα [ αμέσως μετά το κείμενο`;
                       
              const cleanHistory = history.map(item => ({
                                     role: item.role,
                                  parts: [{ text: item.parts[0].text }] 
-                                                      }));       
-            const currentmessage = `System Instructions: ${role} 
-                       Weather Context : ${JSON.stringify(currentWeather.weather)} 
-                      User Message: ${message}`;
-          cleanHistory.push({ role: "user", parts: [{ text: currentmessage }] });
-    
+                                                      }));
+            let currentmessage = message;
+            const cleanMessage = message.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();                                      
+            const keywords = ['stats' , 'statistics' , 'εσοδα' , 'στατιστικα' , 'money' , 'ημερομηνια' , 'date' , 'λεφτα' , 'revenue']     
+            if (keywords.some(text => cleanMessage.includes(text))) 
+                {
+                    const data = await LoadData();
+                    const updatedmessage = message + '\n\nΔΕΔΟΜΕΝΑ:\n' + data;
+                    cleanHistory.push({ role: "user", parts: [{ text: updatedmessage }] });
+                }
+            else {
+                    currentmessage = message;
+                    cleanHistory.push({ role: "user", parts: [{ text: currentmessage }] }); 
+            }
+                                                        
             const aiResponse = await AskGemma(role , cleanHistory);
             if (aiResponse) {
-                     if (aiResponse.toLowerCase().includes("addwash" && aiResponse.includes("["))) {
-                    const start = aiResponse.indexOf('[');
-                    const end = aiResponse.lastIndexOf(']') +1;
-                    const part = aiResponse.substring(start, end );
-                    const data = JSON.parse(part);                    
-                    console.log (data);
-                    data.forEach(item =>  {
+                     if (aiResponse.toLowerCase().includes("addwash") && aiResponse.includes("[")) {
+                    const start = aiResponse.lastIndexOf('[{"tool"');
+                    const end = aiResponse.lastIndexOf(']') + 1;
+                    const part = aiResponse.substring(start, end);
+                    console.log('Trying to parse:', part);
+                    try {
+                        const data = JSON.parse(part);
+                        console.log (data);
+                        data.forEach(item =>  {
                         let v = item.vehicle.toLowerCase() === 'motorcycle' ? 'Motorcycle' : 'Car';
                         let rawType = item.washType || item.wash_type || "Simple";
                         let t = rawType.toLowerCase().includes('premium') ? 'Premium' : 'Simple';
@@ -92,15 +112,21 @@ app.post('/AI/chat' , async (req,res) => {
                         console.log (`New wash added : ${item.vehicle} ${item.washType}`)
                 })
                      await myWash.SaveData();  
-                }
-                
+                    }
+                catch(error) {
+                        console.error(`Error parsing JSON: ${error}`);
+                    }
+                     }}
                      await addHistory(messageid, 'user', message);
                      await addHistory(messageid, 'model', aiResponse);
-                     let cleanResponse = aiResponse.split('[')[0].trim();
+                     let cleanResponse = aiResponse
+                        .replace(/\[\s*\]/g, '')  
+                        .split('[')[0]             
+                        .trim();
                     res.json({ response: cleanResponse });
+               
             }
-            
-        }
+        
         catch (error) {
             console.error(error);
            res.status(500).json({ error: 'Failed to talk with Gemma' });
