@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import CarWash from './CarWash.mjs';
 import 'dotenv/config';
 import AskGemma from './AI/Gemma.mjs';
@@ -7,9 +8,11 @@ import LoadData from './reader.mjs';
 
 const app = express();
 app.use(express.json());
-const port = 3000;
+app.use(cors());
+const port = 3001;
 const myWash = new CarWash();
 await myWash.LoadData();
+
 app.get('/', (req, res) => {
   res.send('CarWash API is Online');
 });
@@ -51,8 +54,8 @@ app.post('/AI/chat' , async (req,res) => {
              const role = `Είσαι βοηθός πλυντηρίου αυτοκινήτων στη Χίο.
                             Μπορείς να:
                             - Απαντάς σε γενικές ερωτήσεις για το πλυντήριο
-                            - Ενημερώνεις για τον καιρό όταν σε ρωτάνε
-                            - Καταχωρείς κρατήσεις πλύσης
+                            - Ενημερώνεις για τον καιρό όταν σε ρωτάνε, χρησιμοποιεις μονο στοιχεια που σου δινονται για τον καιρο
+                            - Καταχωρείς κρατήσεις πλύσης χωρις να ρωρας λεπτομέρειες
                             ΣΤΑΤΙΣΤΙΚΑ - αν ο χρήστης ρωτήσει για stats/έσοδα/πλυσίματα:
                                 Διάβασε τα δεδομένα που σου δίνω και απάντησε με φυσικό κείμενο.
                                 ΠΑΡΑΔΕΙΓΜΑ: "Συνολικά είχατε 21 πλυσίματα και 300€ έσοδα."
@@ -80,20 +83,21 @@ app.post('/AI/chat' , async (req,res) => {
                                     role: item.role,
                                  parts: [{ text: item.parts[0].text }] 
                                                       }));
-            let currentmessage = message;
-            const cleanMessage = message.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();                                      
-            const keywords = ['stats' , 'statistics' , 'εσοδα' , 'στατιστικα' , 'money' , 'ημερομηνια' , 'date' , 'λεφτα' , 'revenue']     
-            if (keywords.some(text => cleanMessage.includes(text))) 
-                {
-                    const data = await LoadData();
-                    const updatedmessage = message + '\n\nΔΕΔΟΜΕΝΑ:\n' + data;
-                    cleanHistory.push({ role: "user", parts: [{ text: updatedmessage }] });
-                }
-            else {
-                    currentmessage = message;
-                    cleanHistory.push({ role: "user", parts: [{ text: currentmessage }] }); 
-            }
-                                                        
+            const cleanMessage = message.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();  
+            const weatherkeywords = ['καιρος', 'θερμοκρασια', 'αυριο', 'weather', 'temp', 'temperature', 'αερα']                                                
+            const statskeywords = ['stats' , 'statistics' , 'εσοδα' , 'στατιστικα' , 'money' , 'ημερομηνια' , 'date' , 'λεφτα' , 'revenue' ]
+            if (weatherkeywords.some(k => cleanMessage.includes(k))) { 
+                const data = await myWash.Show();
+                const weatherInfo = `Τρέχουσα θερμοκρασία: ${data.weather.currenttemp}°C
+                                     Αύριο: ${data.weather.tomorrowmin}°C - ${data.weather.tomorrowmax}°C
+                                     Άνεμος: ${data.weather.wind} km/h`;   
+                cleanHistory.push({ role: "user", parts: [{ text: message + '\n\nΚΑΙΡΟΣ:\n' + weatherInfo }] });   
+                } else if (statskeywords.some(k => cleanMessage.includes(k))) {
+                   const data = await LoadData();
+                    cleanHistory.push({ role: "user", parts: [{ text: message + '\n\nΔΕΔΟΜΕΝΑ:\n' + data }] });
+                } else {
+                     cleanHistory.push({ role: "user", parts: [{ text: message }] });
+                            }                                                                                           
             const aiResponse = await AskGemma(role , cleanHistory);
             if (aiResponse) {
                      if (aiResponse.toLowerCase().includes("addwash") && aiResponse.includes("[")) {
