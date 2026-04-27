@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node dist/index.js",
-    "dev": "nodemon -e ts --ignore washes.json --ignore history.json index.ts",
+    "dev": "nodemon --exec \"node --loader ts-node/esm\" index.ts --ignore washes.json --ignore history.json ",
     "build": "tsc"
   },
   "repository": {
@@ -25,6 +25,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.4.1",
     "twilio": "^6.0.0"
   },
   "devDependencies": {
@@ -32,6 +33,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
     "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   }
 }

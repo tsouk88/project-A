@@ -8,6 +8,7 @@ import LoadData from './reader.js';
 import { sendSMS , checkRevenue} from './agent.js'
 import { appendFile } from 'node:fs/promises';
 import { Request, Response } from 'express';
+import { rateLimit } from 'express-rate-limit';
 
 const app = express();
 app.use(express.json());
@@ -15,7 +16,18 @@ app.use(cors());
 const port = 3001;
 const myWash = new CarWash();
 await myWash.LoadData();
-
+const limiter = rateLimit ({
+    windowMs: 15 * 60 * 1000 ,
+    max: 100,
+    message: 'Too many requests'
+})
+app.use(limiter);
+async function logError(error: unknown, context: string) {
+    const timestamp = new Date().toLocaleString("el-GR", { timeZone: "Europe/Athens" });
+    const message = `${timestamp} - ERROR in ${context}: ${error}\n`;
+    await appendFile('app.log', message);
+    console.error(message);
+}
 
 app.get('/', (req:Request, res:Response) => {
   res.send('CarWash API is Online');
@@ -122,7 +134,8 @@ app.post('/AI/chat' , async (req:Request, res:Response) => {
                      await myWash.SaveData();  
                     }
                 catch(error) {
-                        console.error(`Error parsing JSON: ${error}`);
+                         await logError(error, '/AI/chat');
+                       
                     }
                      }}
                      if (!aiResponse) return;
@@ -137,7 +150,7 @@ app.post('/AI/chat' , async (req:Request, res:Response) => {
             }
         
         catch (error) {
-            console.error(error);
+            await logError(error, '/AI/chat');
            res.status(500).json({ error: 'Failed to talk with Gemma' });
         }
     })
@@ -180,7 +193,7 @@ app.get('/API/stats' , async (req:Request, res:Response) => {
     const data = await myWash.Show();
     res.json(data);
     } catch (error) {
-        console.error('Something went wrong:', error);
+       await logError(error, '/API/stats');
         res.status(500).send('Internal Server Error');
     }
 })
