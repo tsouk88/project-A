@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.mjs",
-    "dev": "nodemon -e js,mjs --ignore washes.json --ignore history.json index.mjs"
+    "start": "node dist/index.js",
+    "dev": "nodemon -e ts --ignore washes.json --ignore history.json index.ts",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
@@ -15,7 +16,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/tsouk88/project-A/issues"
   },
@@ -27,6 +28,10 @@
     "twilio": "^6.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0",
+    "nodemon": "^3.1.14",
+    "typescript": "^6.0.3"
   }
 }

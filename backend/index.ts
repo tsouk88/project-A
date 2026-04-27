@@ -1,12 +1,13 @@
 import express from 'express';
 import cors from 'cors';
-import CarWash from './CarWash.mjs';
+import CarWash from './CarWash.js';
 import 'dotenv/config';
-import AskGemma from './AI/Gemma.mjs';
-import { getHistory , addHistory } from './AI/conversationHistory.mjs';
-import LoadData from './reader.mjs';
-import { sendSMS , checkRevenue} from './agent.mjs'
+import AskGemma from './AI/Gemma.js';
+import { getHistory , addHistory } from './AI/conversationHistory.js';
+import LoadData from './reader.js';
+import { sendSMS , checkRevenue} from './agent.js'
 import { appendFile } from 'node:fs/promises';
+import { Request, Response } from 'express';
 
 const app = express();
 app.use(express.json());
@@ -16,13 +17,13 @@ const myWash = new CarWash();
 await myWash.LoadData();
 
 
-app.get('/', (req, res) => {
+app.get('/', (req:Request, res:Response) => {
   res.send('CarWash API is Online');
 });
-app.get('/info' , (req, res) => {
+app.get('/info' , ((req:Request, res:Response) => {
     res.send('The Carwash is always open 24/7')
-});
-app.post('/API/add-wash', async (req, res) => {
+}))
+app.post('/API/add-wash', async (req:Request, res:Response) => {
     const { vehicle, washType } = req.body;
     const validvehicles = ['Car', 'Motorcycle'];
     const validtypes = ['Simple', 'Premium'];
@@ -46,7 +47,7 @@ app.post('/API/add-wash', async (req, res) => {
         res.status(500).json({ error: 'Failed to save wash' });
     }
 });
-app.post('/AI/chat' , async (req,res) => {
+app.post('/AI/chat' , async (req:Request, res:Response) => {
     const messageid = req.body.messageid;
     let message = req.body.message;
     if (!message) {
@@ -90,7 +91,7 @@ app.post('/AI/chat' , async (req,res) => {
             const weatherkeywords = ['καιρος', 'θερμοκρασια', 'αυριο', 'weather', 'temp', 'temperature', 'αερα']                                                
             const statskeywords = ['stats' , 'statistics' , 'εσοδα' , 'στατιστικα' , 'money' , 'ημερομηνια' , 'date' , 'λεφτα' , 'revenue' ]
             if (weatherkeywords.some(k => cleanMessage.includes(k))) { 
-                const data = await myWash.Show();
+                const data = await myWash.Show() as any;
                 const weatherInfo = `Τρέχουσα θερμοκρασία: ${data.weather.currenttemp}°C
                                      Αύριο: ${data.weather.tomorrowmin}°C - ${data.weather.tomorrowmax}°C
                                      Άνεμος: ${data.weather.wind} km/h`;   
@@ -111,7 +112,7 @@ app.post('/AI/chat' , async (req,res) => {
                     try {
                         const data = JSON.parse(part);
                         console.log (data);
-                        data.forEach(item =>  {
+                        data.forEach((item:any) =>  {
                         let v = item.vehicle.toLowerCase() === 'motorcycle' ? 'Motorcycle' : 'Car';
                         let rawType = item.washType || item.wash_type || "Simple";
                         let t = rawType.toLowerCase().includes('premium') ? 'Premium' : 'Simple';
@@ -124,6 +125,7 @@ app.post('/AI/chat' , async (req,res) => {
                         console.error(`Error parsing JSON: ${error}`);
                     }
                      }}
+                     if (!aiResponse) return;
                      await addHistory(messageid, 'user', message);
                      await addHistory(messageid, 'model', aiResponse);
                      let cleanResponse = aiResponse
@@ -139,11 +141,11 @@ app.post('/AI/chat' , async (req,res) => {
            res.status(500).json({ error: 'Failed to talk with Gemma' });
         }
     })
-app.post('/AI/agent', async (req,res)  => {
+app.post('/AI/agent', async (req:Request, res:Response)  => {
     try {
     const now = new Date();
     const hours = now.getHours();
-    const todaystr= new Date().toLocaleString("el-GR", { timeZone: "Europe/Athens" });
+    const todaystr= new Date().toLocaleString("el-GR", { timeZone: "Europe/Athens" }); 
     if (hours !== 23) {
        const response = todaystr + ' - Time is not right now , will check back later'
        await appendFile('app.log' ,response + '\n' );
@@ -151,7 +153,7 @@ app.post('/AI/agent', async (req,res)  => {
       return ;
     }
         const data = await checkRevenue(myWash);
-        const thoughts = [{ time: todaystr, revenue: data.dailyrev, wind: data.wind }];
+        const thoughts: any[] = [{ time: todaystr, revenue: data.dailyrev, wind: data.wind }];
         if (data.dailyrev < 50 && data.wind <=20) {
             await sendSMS('Τα έσοδα είναι χαμηλά και ο καιρός καλός')
             thoughts.push({[todaystr] : 'Η αποστολή ολοκληρώθηκε'});
@@ -173,7 +175,7 @@ app.post('/AI/agent', async (req,res)  => {
        res.status(500).send('Internal Server Error');
     }
     })
-app.get('/API/stats' , async (req,res) => {
+app.get('/API/stats' , async (req:Request, res:Response) => {
     try {
     const data = await myWash.Show();
     res.json(data);
@@ -182,7 +184,7 @@ app.get('/API/stats' , async (req,res) => {
         res.status(500).send('Internal Server Error');
     }
 })
-app.get('/reset' , async (req,res) =>{
+app.get('/reset' , async (req:Request, res:Response) =>{
     try {
         await myWash.resetData();
         res.send('Everything is reset')
@@ -191,17 +193,17 @@ app.get('/reset' , async (req,res) =>{
         res.status(500).send('Internal Server Error');
     }
     })
-app.get('/API/money' , async (req , res) => {
+app.get('/API/money' , async (req:Request, res:Response) => {
     try {
-        const data = await myWash.Show();
+        const data = await myWash.Show() as any;
         res.json(data.revenue);
     } catch (error) {
         console.error('Something went wrong:', error);
         res.status(500).send('Internal Server Error');
     }   })   
- app.get('/API/weather' , async (req , res) => {
+ app.get('/API/weather' , async (req:Request, res:Response) => {
     try {
-        const data = await myWash.Show();
+        const data = await myWash.Show() as any;
         res.json(data.weather);
     } catch (error) {
         console.error('Something went wrong:', error);

@@ -1,4 +1,12 @@
-export async function Weather() {
+type WeatherData = {
+    currenttemp: number | string;
+    tomorrowmin: number | string;
+    tomorrowmax: number | string;
+    wind: number | string;
+    success: boolean;
+};
+
+export async function Weather() : Promise<WeatherData> {
   try {
     const response = await fetch("https://wttr.in/Chios?format=j1");
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -16,7 +24,7 @@ export async function Weather() {
     };
   }
     catch (error) {
-    console.error("⚠️ Weather fetch failed:", error.message); }
+    console.error("⚠️ Weather fetch failed:", error); }
   return { 
         currenttemp: "N/A", 
         tomorrowmin: "N/A", 

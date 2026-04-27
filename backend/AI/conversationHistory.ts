@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 const historyfile = './AI/history.json'
 
-export async function getHistory(sessionID) {
+export async function getHistory(sessionID : number): Promise <any[]> {
     try {
         const data = await fs.readFile(historyfile, 'utf-8')
         const history = JSON.parse(data)
@@ -12,8 +12,8 @@ export async function getHistory(sessionID) {
     }
 }
 
-export async function addHistory(sessionID, role , message) {
-    let history = {}
+export async function addHistory(sessionID : string , role:string , message:string) : Promise <void> {
+    let history: Record<string, any[]> = {};
     try {
        const data = await fs.readFile(historyfile, 'utf-8')
        history = JSON.parse(data)

@@ -1,7 +1,19 @@
 import { writeFile, readFile } from 'fs/promises';
-import  {Weather}  from './Weather.mjs';
+import  {Weather}  from './Weather.js';
+
 
 export default class CarWash {
+    cars : number ;
+    motorcycles : number;
+    washes : number;
+    dailyMoney : number; 
+    simplewash : number;
+    premiumwash : number;
+    simpleprice : number;
+    premiumprice : number;
+    history : any[];
+    overall : number;
+
     constructor() {
         this.cars=0;
         this.motorcycles=0;
@@ -14,7 +26,7 @@ export default class CarWash {
         this.history = [];
         this.overall = 0 ;
     }  
-addWash (vehicle , washType ) {
+addWash (vehicle : string , washType : string ): void {
     const validVehicles = ['Car', 'Motorcycle'];
     const validTypes = ['Simple', 'Premium'];
     if (!validVehicles.includes(vehicle)) {
@@ -42,7 +54,7 @@ addWash (vehicle , washType ) {
     }
 
 
-async Show () {
+async Show() :Promise<object | void> {
     const todaystring = new Date().toLocaleDateString();
     const pastmoney= this.history.filter(d => d.date !== todaystring);
     const totalpastmoney = pastmoney.reduce((total, entry) => total + entry.money, 0);
@@ -77,7 +89,7 @@ async Show () {
         }
 
 
-fixedPrice(vehicle, washType) {
+fixedPrice(vehicle : string, washType : string) : void {
      if (washType === 'Simple') {
         this.simplewash++;
         this.dailyMoney += this.simpleprice;
@@ -90,7 +102,7 @@ fixedPrice(vehicle, washType) {
     }
 }
 
-async SaveData () {
+async SaveData () : Promise<void> {
     const todaystring = new Date().toLocaleDateString();
     const Data = {
         money : this.dailyMoney,
@@ -121,7 +133,7 @@ async SaveData () {
     }
 }
 
-async LoadData () {
+async LoadData () : Promise<void> {
     try {
         const datastring = await readFile('wash_stats.json', 'utf-8'); 
         this.history = JSON.parse(datastring);
@@ -154,7 +166,7 @@ async LoadData () {
     }
 
 
-async resetData () {
+async resetData () : Promise<void> {
     this.cars = 0;
     this.motorcycles = 0;
     this.washes = 0;
