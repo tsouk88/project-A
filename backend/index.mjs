@@ -5,6 +5,8 @@ import 'dotenv/config';
 import AskGemma from './AI/Gemma.mjs';
 import { getHistory , addHistory } from './AI/conversationHistory.mjs';
 import LoadData from './reader.mjs';
+import { sendSMS , checkRevenue} from './agent.mjs'
+import { appendFile } from 'node:fs/promises';
 
 const app = express();
 app.use(express.json());
@@ -12,6 +14,7 @@ app.use(cors());
 const port = 3001;
 const myWash = new CarWash();
 await myWash.LoadData();
+
 
 app.get('/', (req, res) => {
   res.send('CarWash API is Online');
@@ -128,7 +131,7 @@ app.post('/AI/chat' , async (req,res) => {
                         .split('[')[0]             
                         .trim();
                     res.json({ response: cleanResponse });
-               
+              
             }
         
         catch (error) {
@@ -136,7 +139,40 @@ app.post('/AI/chat' , async (req,res) => {
            res.status(500).json({ error: 'Failed to talk with Gemma' });
         }
     })
-  
+app.post('/AI/agent', async (req,res)  => {
+    try {
+    const now = new Date();
+    const hours = now.getHours();
+    const todaystr= new Date().toLocaleString("el-GR", { timeZone: "Europe/Athens" });
+    if (hours !== 23) {
+       const response = todaystr + ' - Time is not right now , will check back later'
+       await appendFile('app.log' ,response + '\n' );
+       res.json(response);
+      return ;
+    }
+        const data = await checkRevenue(myWash);
+        const thoughts = [{ time: todaystr, revenue: data.dailyrev, wind: data.wind }];
+        if (data.dailyrev < 50 && data.wind <=20) {
+            await sendSMS('Τα έσοδα είναι χαμηλά και ο καιρός καλός')
+            thoughts.push({[todaystr] : 'Η αποστολή ολοκληρώθηκε'});
+        }
+        if (data.wind > 20) {
+            const thought = `Aκύρωση SMS λόγω καιρού`;
+            thoughts.push({[todaystr]: thought})
+        }
+        if (data.dailyrev > 50) {
+            const thought = 'Ακύρωση SMS λόγω εσόδων';
+            thoughts.push({[todaystr] : thought});
+        }
+        const logentry = JSON.stringify(thoughts);
+        await appendFile('app.log' ,logentry + '\n' );
+        res.json(thoughts);
+     }
+    catch(err) {
+       console.error(err) 
+       res.status(500).send('Internal Server Error');
+    }
+    })
 app.get('/API/stats' , async (req,res) => {
     try {
     const data = await myWash.Show();
@@ -173,4 +209,18 @@ app.get('/API/money' , async (req , res) => {
     }   })   
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
+  setInterval(async () => {
+    try {
+        const todaystr =new Date().toLocaleString("el-GR", { timeZone: "Europe/Athens" });
+        await fetch(`http://localhost:${port}/AI/agent`, { 
+                method: 'POST' 
+            });
+            console.log('Agent wake up call sent');
+            const saveonfile=todaystr + ' - Agent wake up call sent' ;
+            await appendFile('app.log' ,saveonfile + '\n' );
+             }
+        catch (err){
+            console.error(`Somethin went wrong , ${err}`)
+        }    
+  }, 1800000);
 });
