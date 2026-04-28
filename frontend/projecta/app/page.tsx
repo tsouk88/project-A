@@ -38,7 +38,7 @@ export default function Dashboard() {
 
 
 const sendMessage = () => {
-  fetch('http://localhost:3001/AI/chat', {
+  fetch(`${process.env.NEXT_PUBLIC_API_URL}/AI/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ messageid: sessionId, message: input })
@@ -55,7 +55,7 @@ const sendMessage = () => {
 }
 
   useEffect(() => {
-    fetch('http://localhost:3001/API/stats')
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/API/stats`)
       .then(res => res.json())
       .then(data => {
         setStats(data);
