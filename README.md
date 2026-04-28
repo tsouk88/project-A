@@ -37,3 +37,6 @@ A full-stack AI system for a car wash business in Chios, Greece.
    cd frontend/projecta && npm run dev
 
 6. Open http://localhost:3000
+
+## Vercel URL
+project-a-taupe-kappa.vercel.app
