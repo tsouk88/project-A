@@ -38,5 +38,8 @@ A full-stack AI system for a car wash business in Chios, Greece.
 
 6. Open http://localhost:3000
 
-## Vercel URL
-project-a-taupe-kappa.vercel.app
+## Live Demo
+🌐 [ChiosWash Dashboard](https://project-a-taupe-kappa.vercel.app)
+
+## Preview
+![Dashboard](assets/Screenshot.png)
